@@ -21,9 +21,8 @@ describe('Payment Integrations & Adapters', () => {
     expect(result.success).toBe(true)
     expect(result.paymentMethod).toBe('qris')
     expect(result.status).toBe('pending') // Never starts as paid
-    expect(result.qrString).toBeDefined()
-    expect(result.qrString).toContain('52000') // Dynamic nominal encoded
-    expect(result.qrString).toContain('Calls Kitchen') // Merchant identity encoded
+    expect(result.qrUrl).toBe('/images/qris.jpeg')
+    expect(result.gatewayReference).toContain('CK-20261018-9999')
   })
 
   it('Strictly isolates order status and payment status', () => {

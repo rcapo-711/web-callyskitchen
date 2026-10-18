@@ -1,14 +1,60 @@
-import React, { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { ShoppingBag, User as UserIcon, Menu, X, ShieldAlert, LogOut } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { ShoppingBag, User as UserIcon, Menu, X, ShieldAlert, LogOut, Clock } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
+import { supabase, isSupabaseConfigured } from '../../lib/supabase'
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0)
   const { user, isAdmin, logout } = useAuth()
   const { totalItemsCount } = useCart()
   const location = useLocation()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/', { replace: true })
+  }
+
+  // Track pending payment orders for the current user
+  useEffect(() => {
+    if (!user) {
+      setPendingOrdersCount(0)
+      return
+    }
+
+    const checkPendingOrders = async () => {
+      let count = 0
+      if (isSupabaseConfigured()) {
+        try {
+          const { count: dbCount } = await supabase
+            .from('orders')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('payment_status', 'pending')
+          if (dbCount !== null && dbCount !== undefined) count = dbCount
+        } catch {
+          // Ignore
+        }
+      } else {
+        try {
+          const localOrders = JSON.parse(
+            localStorage.getItem('calls_kitchen_local_orders') || '[]'
+          )
+          count = localOrders.filter(
+            (o: any) => o.user_id === user.id && o.payment_status === 'pending'
+          ).length
+        } catch {
+          // Ignore
+        }
+      }
+      setPendingOrdersCount(count)
+    }
+
+    checkPendingOrders()
+  }, [user, location.pathname])
 
   const navLinks = [
     { label: 'Beranda', href: '/' },
@@ -107,9 +153,17 @@ export const Navbar: React.FC = () => {
                   <span className="max-w-[120px] truncate">
                     {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Profil'}
                   </span>
+                  {pendingOrdersCount > 0 && (
+                    <span
+                      className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white animate-pulse shadow-xs"
+                      title={`${pendingOrdersCount} pesanan menunggu pembayaran`}
+                    >
+                      {pendingOrdersCount}
+                    </span>
+                  )}
                 </Link>
                 <button
-                  onClick={() => logout()}
+                  onClick={handleLogout}
                   className="p-2.5 text-brown-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                   title="Keluar"
                   aria-label="Logout"
@@ -198,15 +252,22 @@ export const Navbar: React.FC = () => {
                 <Link
                   to="/profile"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 w-full px-4 py-3 text-sm font-semibold text-brown-900 bg-cream-200 rounded-xl"
+                  className="flex items-center justify-between w-full px-4 py-3 text-sm font-semibold text-brown-900 bg-cream-200 rounded-xl"
                 >
-                  <UserIcon className="w-5 h-5 text-caramel-600" />
-                  <span>Profil Saya ({user.email})</span>
+                  <div className="flex items-center gap-2">
+                    <UserIcon className="w-5 h-5 text-caramel-600" />
+                    <span>Profil Saya ({user.email})</span>
+                  </div>
+                  {pendingOrdersCount > 0 && (
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-500 text-white animate-pulse">
+                      {pendingOrdersCount} Belum Dibayar
+                    </span>
+                  )}
                 </Link>
                 <button
-                  onClick={() => {
-                    logout()
+                  onClick={async () => {
                     setMobileMenuOpen(false)
+                    await handleLogout()
                   }}
                   className="flex items-center gap-2 w-full px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl text-left"
                 >

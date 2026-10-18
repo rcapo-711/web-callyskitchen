@@ -124,8 +124,8 @@ Copy-Item .env.example .env
 Isi variabel di file `.env`:
 
 ```env
-# Supabase URL (Sudah diset sesuai proyek Anda):
-VITE_SUPABASE_URL=https://icnbtgkzzocjgjosenca.supabase.co
+# Supabase URL:
+VITE_SUPABASE_URL=https://your-project.supabase.co
 
 # Anon / Public API Key Supabase (Dapatkan dari Supabase Dashboard -> Project Settings -> API):
 VITE_SUPABASE_ANON_KEY=masukkan_anon_key_anda_di_sini
@@ -143,11 +143,12 @@ VITE_PAYMENT_ENVIRONMENT=sandbox
 ## 6. CARA MENGHUBUNGKAN PROYEK SUPABASE
 
 1. Buka browser dan login ke [Supabase Dashboard](https://supabase.com/dashboard).
-2. Buka proyek Anda: `https://icnbtgkzzocjgjosenca.supabase.co`.
+2. Buka proyek Supabase Anda.
 3. Buka menu **Project Settings** (ikon gerigi di kiri bawah) -> **API**.
 4. Salin **Project URL** dan **Project API Keys (`anon` / `public`)**.
-5. Buka file `.env` di VS Code, lalu tempelkan nilai `anon key` pada baris:
-   `VITE_SUPABASE_ANON_KEY=...`
+5. Buka file `.env` di VS Code, lalu tempelkan nilainya:
+   - `VITE_SUPABASE_URL=...`
+   - `VITE_SUPABASE_ANON_KEY=...`
 6. Restart server development (`Ctrl + C` lalu `npm run dev`).
 
 ---
@@ -158,7 +159,7 @@ Seluruh skema tabel, indeks performa, fungsi pengurangan stok atomik, pemicu pem
 `supabase/migrations/20261018000000_calls_kitchen_schema.sql`.
 
 ### Langkah Eksekusi:
-1. Buka [Supabase Dashboard SQL Editor](https://icnbtgkzzocjgjosenca.supabase.co/project/sql).
+1. Buka menu **SQL Editor** di Supabase Dashboard proyek Anda.
 2. Klik tombol **New Query**.
 3. Buka file `supabase/migrations/20261018000000_calls_kitchen_schema.sql` di editor, salin seluruh kodenya, lalu tempelkan di SQL Editor Supabase.
 4. Klik tombol **Run**.
@@ -184,14 +185,39 @@ Role pengguna tidak boleh diubah dari browser demi keamanan. Untuk memberikan ha
 3. Jalankan query berikut (tersedia juga di `supabase/grant_admin.sql`):
 
 ```sql
+-- 1. Update role yang sudah ada menjadi 'admin'
+UPDATE public.user_roles
+SET role = 'admin'
+WHERE user_id IN (
+    SELECT id FROM auth.users WHERE email = 'admin@callskitchen.com'
+);
+
+-- 2. Sisipkan baris admin jika akun belum memiliki baris role
 INSERT INTO public.user_roles (user_id, role)
 SELECT id, 'admin'
 FROM auth.users
 WHERE email = 'admin@callskitchen.com'
-ON CONFLICT (user_id, role) DO UPDATE SET role = 'admin';
+  AND NOT EXISTS (
+    SELECT 1 FROM public.user_roles r WHERE r.user_id = auth.users.id
+  );
+
+-- 3. Hapus duplikasi role 'customer' jika sebelumnya sempat tersimpan ganda
+DELETE FROM public.user_roles
+WHERE role = 'customer'
+  AND user_id IN (
+    SELECT id FROM auth.users WHERE email = 'admin@callskitchen.com'
+  );
 ```
 
 4. Setelah query berhasil dijalankan, login kembali menggunakan akun tersebut. Akun akan otomatis memiliki akses penuh ke `/admin` dan navigasi panel admin akan muncul di navbar.
+
+### Seeder Pengguna Otomatis (Admin & Pelanggan):
+Tersedia file [seed_users.sql](file:///c:/Users/User/projects/kelarin/bug-fix/web-callyskitchen-fix/supabase/seed_users.sql) untuk membuat akun Admin dan Pelanggan sekaligus tanpa perlu konfirmasi email:
+- Buka **Supabase SQL Editor** -> Buka file `supabase/seed_users.sql` -> Salin dan jalankan (*Run*).
+- Akun yang dibuat:
+  - **Admin:** `admin@callskitchen.com` / `admin.callskitchen@gmail.com` (Password: `Password123!`)
+  - **Pelanggan:** `budi.santoso@gmail.com` (Password: `Password123!`)
+  - **Pelanggan:** `siti.rahma@gmail.com` (Password: `Password123!`)
 
 ---
 

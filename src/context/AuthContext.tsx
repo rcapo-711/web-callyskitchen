@@ -58,14 +58,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // 2. Fetch Role securely from user_roles table
-      const { data: roleData, error: roleError } = await supabase
+      const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .single()
 
-      if (roleData && (roleData.role === 'admin' || roleData.role === 'customer')) {
-        setRole(roleData.role as UserRole)
+      if (roleData && roleData.some((r) => r.role === 'admin')) {
+        setRole('admin')
       } else {
         setRole('customer')
       }
@@ -94,17 +93,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (_event, session) => {
+          (_event, session) => {
             if (!mounted) return
             if (session?.user) {
               setUser(session.user)
-              await fetchUserProfileAndRole(session.user.id, session.user.email)
+              setTimeout(async () => {
+                if (mounted) {
+                  await fetchUserProfileAndRole(session.user.id, session.user.email)
+                  setIsLoading(false)
+                }
+              }, 0)
             } else {
               setUser(null)
               setProfile(null)
               setRole('customer')
+              setIsLoading(false)
             }
-            setIsLoading(false)
           }
         )
 

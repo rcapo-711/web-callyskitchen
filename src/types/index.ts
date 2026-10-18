@@ -94,6 +94,9 @@ export interface PaymentRecord {
     notes?: string
     received_by_admin?: string
     received_at?: string
+    proof_url?: string
+    proof_uploaded_at?: string
+    rejection_reason?: string
   } | null
   created_at: string
   updated_at?: string

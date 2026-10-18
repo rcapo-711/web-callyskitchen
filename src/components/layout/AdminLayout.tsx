@@ -17,7 +17,7 @@ import {
 import { useAuth } from '../../context/AuthContext'
 
 export const AdminLayout: React.FC = () => {
-  const { user, isAdmin, role, logout, isLiveConfigured } = useAuth()
+  const { user, isAdmin, role, logout, isLoading } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -38,8 +38,16 @@ export const AdminLayout: React.FC = () => {
     return false
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-cream-100 flex items-center justify-center p-4">
+        <div className="w-10 h-10 border-4 border-caramel-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
   // Security Guard: Check Admin role
-  if (!user || (!isAdmin && isLiveConfigured)) {
+  if (!user || !isAdmin) {
     return (
       <div className="min-h-screen bg-cream-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full border border-red-200 text-center space-y-4 shadow-xl">
@@ -157,8 +165,11 @@ export const AdminLayout: React.FC = () => {
               </span>
             </div>
             <button
-              onClick={() => logout()}
-              className="p-2 text-cream-400 hover:text-red-400 rounded-lg transition-colors"
+              onClick={async () => {
+                await logout()
+                navigate('/', { replace: true })
+              }}
+              className="p-2 text-cream-400 hover:text-red-400 rounded-lg transition-colors cursor-pointer"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />

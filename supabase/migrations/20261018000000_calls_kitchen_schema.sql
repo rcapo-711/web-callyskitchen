@@ -1,6 +1,5 @@
 -- ==============================================================================
 -- CALLS KITCHEN - FULL-STACK SUPABASE DATABASE SCHEMA & RLS MIGRATION
--- Project URL: https://icnbtgkzzocjgjosenca.supabase.co
 -- ==============================================================================
 
 -- 1. EXTENSIONS

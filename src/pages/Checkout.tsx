@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -43,17 +43,18 @@ export const Checkout: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const orderSuccessRef = useRef(false)
 
   // Standard shipping cost from store config
   const shippingCost = 12000
   const grandTotal = selectedSubtotal + shippingCost
 
-  // Redirect if no selected items
+  // Redirect if no selected items (only if not currently submitting or order completed)
   useEffect(() => {
-    if (selectedItems.length === 0) {
+    if (selectedItems.length === 0 && !isSubmitting && !orderSuccessRef.current) {
       navigate('/cart', { replace: true })
     }
-  }, [selectedItems, navigate])
+  }, [selectedItems, navigate, isSubmitting])
 
   const {
     register,
@@ -247,6 +248,9 @@ export const Checkout: React.FC = () => {
         )
       }
 
+      // Mark order submission as completed to prevent redirect effect
+      orderSuccessRef.current = true
+
       // Clear ONLY selected items from cart (unselected items remain!)
       clearCart(true)
 
@@ -372,10 +376,10 @@ export const Checkout: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <QrCode className="w-5 h-5 text-caramel-600" />
-                    <span className="font-extrabold text-sm text-brown-900">QRIS Dinamis</span>
+                    <span className="font-extrabold text-sm text-brown-900">QRIS</span>
                   </div>
                   <p className="text-xs text-brown-500 leading-relaxed">
-                    Scan via GoPay, BCA, Mandiri, ShopeePay, Dana, dll. Verifikasi otomatis resmi.
+                    Scan via GoPay, BCA, Mandiri, ShopeePay, Dana, dll. Unggah bukti transfer untuk konfirmasi.
                   </p>
                 </div>
               </label>

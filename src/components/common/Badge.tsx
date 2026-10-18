@@ -65,7 +65,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type = 'order'
   } else if (type === 'method') {
     switch (status as PaymentMethod) {
       case 'qris':
-        label = 'QRIS Dinamis'
+        label = 'QRIS'
         colorStyles = 'bg-caramel-50 text-caramel-700 border-caramel-200'
         break
       case 'cod':

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import {
@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   AlertCircle,
   LogOut,
+  Clock,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/common/Button'
@@ -21,6 +22,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 export const Profile: React.FC = () => {
   const { user, profile, updateProfile, logout } = useAuth()
   const navigate = useNavigate()
+  const isLoggingOutRef = useRef(false)
 
   const [orders, setOrders] = useState<Order[]>([])
   const [loadingOrders, setLoadingOrders] = useState(true)
@@ -47,9 +49,9 @@ export const Profile: React.FC = () => {
     }
   }, [profile, reset])
 
-  // Redirect if not logged in
+  // Redirect if not logged in (unless intentionally logging out to home)
   useEffect(() => {
-    if (!user) {
+    if (!user && !isLoggingOutRef.current) {
       navigate('/login?redirect=/profile', { replace: true })
     }
   }, [user, navigate])
@@ -83,9 +85,7 @@ export const Profile: React.FC = () => {
         const localOrders: Order[] = JSON.parse(
           localStorage.getItem('calls_kitchen_local_orders') || '[]'
         )
-        const userOrders = localOrders.filter(
-          (o) => o.user_id === user.id || o.user_id.startsWith('usr-') || o.user_id.startsWith('guest-')
-        )
+        const userOrders = localOrders.filter((o) => o.user_id === user.id)
         setOrders(userOrders)
       } catch {
         setOrders([])
@@ -114,6 +114,12 @@ export const Profile: React.FC = () => {
     }
   }
 
+  const handleLogout = async () => {
+    isLoggingOutRef.current = true
+    await logout()
+    navigate('/', { replace: true })
+  }
+
   if (!user) return null
 
   return (
@@ -127,8 +133,8 @@ export const Profile: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={() => logout()}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors self-start sm:self-auto"
+          onClick={handleLogout}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors self-start sm:self-auto cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           <span>Keluar Akun</span>
@@ -244,12 +250,42 @@ export const Profile: React.FC = () => {
 
         {/* Order History List (Right: 8 Cols) */}
         <div className="lg:col-span-8 space-y-4">
-          <div className="flex items-center justify-between pb-2">
-            <h2 className="text-xl font-black text-brown-900 flex items-center gap-2">
-              <Package className="w-5 h-5 text-caramel-600" />
-              <span>Riwayat Pesanan ({orders.length})</span>
-            </h2>
-          </div>
+          {(() => {
+            const pendingCount = orders.filter(
+              (o) => o.payment_status === 'pending' && o.payment_method === 'qris'
+            ).length
+
+            return (
+              <>
+                <div className="flex flex-wrap items-center justify-between pb-2 gap-2">
+                  <h2 className="text-xl font-black text-brown-900 flex items-center gap-2">
+                    <Package className="w-5 h-5 text-caramel-600" />
+                    <span>Riwayat Pesanan ({orders.length})</span>
+                  </h2>
+                  {pendingCount > 0 && (
+                    <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1.5 shadow-xs">
+                      <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                      <span>{pendingCount} Pesanan Menunggu Pembayaran</span>
+                    </span>
+                  )}
+                </div>
+
+                {pendingCount > 0 && (
+                  <div className="p-4 bg-amber-50 rounded-2xl border border-amber-300/80 flex items-start gap-3 text-xs text-amber-900 shadow-xs">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <span className="font-extrabold text-amber-950 block">
+                        Anda memiliki {pendingCount} pesanan yang belum dibayar
+                      </span>
+                      <p className="text-amber-800 text-[11px] leading-relaxed">
+                        Klik tombol <strong>Bayar Sekarang</strong> pada kartu pesanan di bawah untuk membuka kode QRIS dan mengunggah bukti transfer Anda.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )
+          })()}
 
           {loadingOrders ? (
             <div className="p-8 bg-white rounded-3xl border border-cream-300 text-center text-brown-500">

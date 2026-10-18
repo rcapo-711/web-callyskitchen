@@ -278,9 +278,9 @@ export const Home: React.FC = () => {
               <div className="w-14 h-14 rounded-2xl bg-caramel-100 text-caramel-600 flex items-center justify-center mx-auto shadow-inner">
                 <Truck className="w-7 h-7" />
               </div>
-              <h3 className="text-lg font-bold text-brown-900">QRIS Dinamis &amp; COD</h3>
+              <h3 className="text-lg font-bold text-brown-900">QRIS &amp; COD</h3>
               <p className="text-sm text-brown-500 leading-relaxed">
-                Kemudahan pembayaran menggunakan QRIS otomatis serba praktis atau Cash on Delivery (bayar tunai saat paket diterima).
+                Kemudahan pembayaran menggunakan QRIS serba praktis atau Cash on Delivery (bayar tunai saat paket diterima).
               </p>
             </div>
           </div>
