@@ -41,6 +41,14 @@ const supabase = createClient(supabaseUrl, clientKey, {
 
 const seedUsers = [
   {
+    email: 'callskitchen711@gmail.com',
+    password: 'callskitchen123',
+    fullName: 'Rafa Callysta Arraissa',
+    phone: '0895425137500',
+    address: 'Universitas Negeri Jakarta',
+    targetRole: 'admin',
+  },
+  {
     email: 'admin@gmail.com',
     password: 'Password123!',
     fullName: 'Administrator Calls Kitchen',
@@ -97,7 +105,7 @@ async function runSeeder() {
         })
 
         if (createError) {
-          if (createError.message.includes('already registered')) {
+          if (/already.*registered/i.test(createError.message) || createError.status === 422) {
             console.log(`[EXISTING] ${item.email} sudah terdaftar, memperbarui data...`)
             const { data: listData } = await supabase.auth.admin.listUsers()
             const existing = listData?.users?.find((u) => u.email === item.email)
@@ -106,6 +114,11 @@ async function runSeeder() {
               await supabase.auth.admin.updateUserById(userId, {
                 password: item.password,
                 email_confirm: true,
+                user_metadata: {
+                  full_name: item.fullName,
+                  phone: item.phone,
+                  address: item.address,
+                },
               })
             }
           } else {
@@ -167,6 +180,8 @@ async function runSeeder() {
   console.log('AKUN SEEDER SIAP DIGUNAKAN:')
   console.log('====================================================')
   console.log('1. Admin:')
+  console.log('   Email   : callskitchen711@gmail.com (Rafa Callysta Arraissa)')
+  console.log('   Password: callskitchen123')
   console.log('   Email   : admin@gmail.com')
   console.log('   Password: Password123!')
   console.log('   Role    : admin\n')

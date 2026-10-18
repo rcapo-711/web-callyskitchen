@@ -8,6 +8,13 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 DO $$
 DECLARE
   v_pw_hash TEXT;
+
+  -- Akun Admin Pribadi: callskitchen711@gmail.com (Rafa Callysta Arraissa)
+  v_admin_rafa_id UUID := 'a0000000-0000-0000-0000-000000000000';
+  v_admin_rafa_email TEXT := 'callskitchen711@gmail.com';
+  v_admin_rafa_name TEXT := 'Rafa Callysta Arraissa';
+  v_admin_rafa_phone TEXT := '0895425137500';
+  v_admin_rafa_pw_hash TEXT;
   
   -- Akun Admin 1: admin@gmail.com (Sesuai input login Anda)
   v_admin_gmail_id UUID := 'a0000000-0000-0000-0000-000000000001';
@@ -29,8 +36,45 @@ DECLARE
   v_siti_id UUID := 'c0000000-0000-0000-0000-000000000002';
   v_siti_email TEXT := 'siti.rahma@gmail.com';
 BEGIN
-  -- Password default untuk semua akun: Password123!
+  -- Password default: Password123! dan callskitchen123
   v_pw_hash := extensions.crypt('Password123!', extensions.gen_salt('bf'));
+  v_admin_rafa_pw_hash := extensions.crypt('callskitchen123', extensions.gen_salt('bf'));
+
+  -- ============================================================================
+  -- 0. SEED: callskitchen711@gmail.com (Rafa Callysta Arraissa - Admin)
+  -- ============================================================================
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = v_admin_rafa_email) THEN
+    INSERT INTO auth.users (
+      instance_id, id, aud, role, email, encrypted_password,
+      email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
+      created_at, updated_at, confirmation_token, recovery_token,
+      email_change_token_new, email_change
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000000', v_admin_rafa_id, 'authenticated', 'authenticated',
+      v_admin_rafa_email, v_admin_rafa_pw_hash, NOW(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      jsonb_build_object('full_name', v_admin_rafa_name, 'phone', v_admin_rafa_phone, 'address', 'Universitas Negeri Jakarta'),
+      NOW(), NOW(), '', '', '', ''
+    );
+
+    BEGIN
+      INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
+      VALUES (v_admin_rafa_id::text, v_admin_rafa_id, format('{"sub":"%s","email":"%s"}', v_admin_rafa_id::text, v_admin_rafa_email)::jsonb, 'email', v_admin_rafa_email, NOW(), NOW(), NOW())
+      ON CONFLICT DO NOTHING;
+    EXCEPTION WHEN OTHERS THEN NULL; END;
+  ELSE
+    SELECT id INTO v_admin_rafa_id FROM auth.users WHERE email = v_admin_rafa_email;
+    UPDATE auth.users
+    SET encrypted_password = v_admin_rafa_pw_hash, email_confirmed_at = COALESCE(email_confirmed_at, NOW())
+    WHERE id = v_admin_rafa_id;
+  END IF;
+
+  INSERT INTO public.profiles (id, full_name, phone, address, created_at, updated_at)
+  VALUES (v_admin_rafa_id, v_admin_rafa_name, v_admin_rafa_phone, 'Universitas Negeri Jakarta', NOW(), NOW())
+  ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name, phone = EXCLUDED.phone, address = EXCLUDED.address, updated_at = NOW();
+
+  DELETE FROM public.user_roles WHERE user_id = v_admin_rafa_id;
+  INSERT INTO public.user_roles (user_id, role, created_at) VALUES (v_admin_rafa_id, 'admin', NOW());
 
   -- ============================================================================
   -- 1. SEED: admin@gmail.com
@@ -229,6 +273,7 @@ FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.id
 LEFT JOIN public.user_roles r ON u.id = r.user_id
 WHERE u.email IN (
+    'callskitchen711@gmail.com',
     'admin@gmail.com',
     'admin@callskitchen.com',
     'admin.callskitchen@gmail.com',
