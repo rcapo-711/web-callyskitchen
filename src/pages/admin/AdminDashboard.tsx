@@ -60,7 +60,7 @@ export const AdminDashboard: React.FC = () => {
       }
 
       // Check local storage fallback
-      if (fetchedOrders.length === 0) {
+      if (!isSupabaseConfigured()) {
         try {
           fetchedOrders = JSON.parse(
             localStorage.getItem('calls_kitchen_local_orders') || '[]'

@@ -18,42 +18,44 @@ export const AdminCustomers: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      setLoading(true)
-      let orders: Order[] = []
+  
+useEffect(() => {
+  const fetchCustomers = async () => {
+    setLoading(true);
+
+    try {
+      let orders: Order[] = [];
 
       if (isSupabaseConfigured()) {
-        try {
-          const { data } = await supabase.from('orders').select('*')
-          if (data) orders = data
-        } catch (err) {
-          console.warn('Error fetching customers from live orders:', err)
-        }
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*');
+
+        if (error) throw error;
+
+        orders = (data ?? []) as Order[];
+      } else {
+        // Gunakan data lokal hanya jika Supabase belum dikonfigurasi.
+        orders = JSON.parse(
+          localStorage.getItem('calls_kitchen_local_orders') || '[]'
+        );
       }
 
-      if (orders.length === 0) {
-        try {
-          orders = JSON.parse(
-            localStorage.getItem('calls_kitchen_local_orders') || '[]'
-          )
-        } catch {
-          orders = []
-        }
-      }
+      const map = new Map<string, CustomerAggregated>();
 
-      // Aggregate customers by phone/name
-      const map = new Map<string, CustomerAggregated>()
       orders.forEach((o) => {
-        const key = o.recipient_phone || o.recipient_name
-        const existing = map.get(key)
+        const key = o.recipient_phone || o.recipient_name;
+        const existing = map.get(key);
+
         if (existing) {
-          existing.orderCount += 1
+          existing.orderCount += 1;
+
           if (o.payment_status === 'paid') {
-            existing.totalSpent += o.total_amount
+            existing.totalSpent += o.total_amount;
           }
+
           if (o.created_at > existing.lastOrderDate) {
-            existing.lastOrderDate = o.created_at
+            existing.lastOrderDate = o.created_at;
           }
         } else {
           map.set(key, {
@@ -61,18 +63,25 @@ export const AdminCustomers: React.FC = () => {
             phone: o.recipient_phone,
             address: o.shipping_address,
             orderCount: 1,
-            totalSpent: o.payment_status === 'paid' ? o.total_amount : 0,
+            totalSpent:
+              o.payment_status === 'paid' ? o.total_amount : 0,
             lastOrderDate: o.created_at,
-          })
+          });
         }
-      })
+      });
 
-      setCustomers(Array.from(map.values()))
-      setLoading(false)
+      setCustomers(Array.from(map.values()));
+    } catch (err) {
+      console.error('Gagal mengambil data pelanggan:', err);
+      setCustomers([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    fetchCustomers()
-  }, [])
+  fetchCustomers();
+}, []);
+
 
   const filtered = customers.filter(
     (c) =>

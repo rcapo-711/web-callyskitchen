@@ -17,39 +17,49 @@ export const AdminReports: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState<'all' | '7days' | '30days'>('all')
 
+  
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true)
-      let list: Order[] = []
 
-      if (isSupabaseConfigured()) {
+      // Gunakan data lokal hanya jika Supabase tidak dikonfigurasi.
+      if (!isSupabaseConfigured()) {
         try {
-          const { data } = await supabase
-            .from('orders')
-            .select('*, order_items(*)')
-            .order('created_at', { ascending: false })
-          if (data) list = data
-        } catch (err) {
-          console.warn('Error fetching report orders:', err)
-        }
-      }
-
-      if (list.length === 0) {
-        try {
-          list = JSON.parse(
+          const local: Order[] = JSON.parse(
             localStorage.getItem('calls_kitchen_local_orders') || '[]'
           )
-        } catch {
-          list = []
+          setOrders(local)
+        } catch (err) {
+          console.error('Error membaca transaksi lokal:', err)
+          setOrders([])
+        } finally {
+          setLoading(false)
         }
+
+        return
       }
 
-      setOrders(list)
-      setLoading(false)
+      // Jika Supabase aktif, jangan mengambil data lokal sebagai fallback.
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+
+        setOrders(data ?? [])
+      } catch (err) {
+        console.error('Error mengambil pesanan untuk laporan:', err)
+        setOrders([])
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchOrders()
   }, [])
+
 
   // Filter orders by date range
   const filteredOrders = orders.filter((o) => {

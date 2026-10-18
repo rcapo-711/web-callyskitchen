@@ -44,39 +44,59 @@ export const AdminPayments: React.FC = () => {
   const [rejectOrder, setRejectOrder] = useState<Order | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
 
-  const fetchPayments = async () => {
-    setLoading(true)
-    if (isSupabaseConfigured()) {
-      try {
-        const { data: ordersData } = await supabase
-          .from('orders')
-          .select('*')
-          .order('created_at', { ascending: false })
+  
+const fetchPayments = async () => {
+  setLoading(true)
 
-        if (ordersData) setOrders(ordersData)
-
-        const { data: paymentsData } = await supabase
-          .from('payments')
-          .select('*')
-          .order('created_at', { ascending: false })
-
-        if (paymentsData) setPayments(paymentsData)
-      } catch (err) {
-        console.warn('Error fetching live payments:', err)
-      }
-    }
-
+  // Gunakan localStorage hanya jika Supabase memang tidak dikonfigurasi.
+  if (!isSupabaseConfigured()) {
     try {
       const local: Order[] = JSON.parse(
         localStorage.getItem('calls_kitchen_local_orders') || '[]'
       )
-      if (orders.length === 0) setOrders(local)
-    } catch {
-      // Ignore
+      setOrders(local)
+      setPayments([])
+    } catch (err) {
+      console.error('Error membaca transaksi lokal:', err)
+      setOrders([])
+      setPayments([])
+    } finally {
+      setLoading(false)
     }
 
+    return
+  }
+
+  // Jika Supabase aktif, gunakan Supabase sebagai satu-satunya sumber data.
+  try {
+    const [
+      { data: ordersData, error: ordersError },
+      { data: paymentsData, error: paymentsError },
+    ] = await Promise.all([
+      supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('payments')
+        .select('*')
+        .order('created_at', { ascending: false }),
+    ])
+
+    if (ordersError) throw ordersError
+    if (paymentsError) throw paymentsError
+
+    setOrders(ordersData ?? [])
+    setPayments(paymentsData ?? [])
+  } catch (err) {
+    console.error('Error mengambil data pembayaran dari Supabase:', err)
+    setOrders([])
+    setPayments([])
+  } finally {
     setLoading(false)
   }
+}
+
 
   useEffect(() => {
     fetchPayments()
@@ -110,9 +130,13 @@ export const AdminPayments: React.FC = () => {
         o.id === order.id ? { ...o, payment_status: 'paid' as const, updated_at: now } : o
       )
       setOrders(updatedOrders)
-      localStorage.setItem('calls_kitchen_local_orders', JSON.stringify(updatedOrders))
-    } else {
-      setActionFeedback(result.message)
+
+      if (!isSupabaseConfigured()) {
+        localStorage.setItem('calls_kitchen_local_orders',
+          JSON.stringify(updatedOrders)
+        )
+      } else {
+      setActionFeedback(result.message) }
     }
 
     setActionLoading(false)

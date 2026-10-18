@@ -22,41 +22,49 @@ export const AdminSettings: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
+  
   useEffect(() => {
     const fetchSettings = async () => {
       setLoading(true)
-      if (isSupabaseConfigured()) {
-        try {
-          const { data, error } = await supabase
-            .from('store_settings')
-            .select('*')
-            .eq('key', 'general')
-            .single()
 
-          if (!error && data?.value) {
-            setSettings(data.value)
-            setLoading(false)
-            return
-          }
+      if (!isSupabaseConfigured()) {
+        try {
+          const local = localStorage.getItem('calls_kitchen_store_settings')
+
+          setSettings(
+            local ? JSON.parse(local) : DEFAULT_STORE_SETTINGS
+          )
         } catch (err) {
-          console.warn('Error fetching live store settings:', err)
+          console.error('Error membaca pengaturan lokal:', err)
+          setSettings(DEFAULT_STORE_SETTINGS)
+        } finally {
+          setLoading(false)
         }
+
+        return
       }
 
       try {
-        const local = localStorage.getItem('calls_kitchen_store_settings')
-        if (local) {
-          setSettings(JSON.parse(local))
-        }
-      } catch {
-        // Use default
-      }
+        const { data, error } = await supabase
+          .from('store_settings')
+          .select('*')
+          .eq('key', 'general')
+          .maybeSingle()
 
-      setLoading(false)
+        if (error) throw error
+
+        setSettings(data?.value ?? DEFAULT_STORE_SETTINGS)
+      } catch (err) {
+        console.error('Error mengambil pengaturan toko:', err)
+        setSaveError('Gagal mengambil pengaturan dari Supabase.')
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchSettings()
   }, [])
+
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,6 +72,7 @@ export const AdminSettings: React.FC = () => {
     setSaveError(null)
     setSaveSuccess(false)
 
+    
     try {
       if (isSupabaseConfigured()) {
         const { error } = await supabase
@@ -73,17 +82,25 @@ export const AdminSettings: React.FC = () => {
             value: settings,
             updated_at: new Date().toISOString(),
           })
+
         if (error) throw error
+      } else {
+        localStorage.setItem(
+          'calls_kitchen_store_settings',
+          JSON.stringify(settings)
+        )
       }
 
-      localStorage.setItem('calls_kitchen_store_settings', JSON.stringify(settings))
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 3000)
     } catch (err) {
-      setSaveError((err as Error).message || 'Gagal menyimpan pengaturan toko.')
+      setSaveError(
+        (err as Error).message || 'Gagal menyimpan pengaturan toko.'
+      )
     } finally {
       setIsSaving(false)
     }
+
   }
 
   return (

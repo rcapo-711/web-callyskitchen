@@ -34,36 +34,45 @@ export const AdminOrders: React.FC = () => {
   const [statusNotes, setStatusNotes] = useState('')
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null)
 
+  
   const fetchOrders = async () => {
-    setLoading(true)
-    if (isSupabaseConfigured()) {
+    setLoading(true);
+
+    if (!isSupabaseConfigured()) {
+      // Gunakan data lokal hanya jika Supabase belum dikonfigurasi.
       try {
-        const { data, error } = await supabase
-          .from('orders')
-          .select('*, order_items(*)')
-          .order('created_at', { ascending: false })
-
-        if (!error && data) {
-          setOrders(data)
-          setLoading(false)
-          return
-        }
+        const local = JSON.parse(
+          localStorage.getItem('calls_kitchen_local_orders') || '[]'
+        );
+        setOrders(local);
       } catch (err) {
-        console.warn('Error fetching admin live orders:', err)
+        console.error('Gagal membaca pesanan lokal:', err);
+        setOrders([]);
+      } finally {
+        setLoading(false);
       }
+
+      return;
     }
 
+    // Jika Supabase aktif, jangan mengambil fallback lokal.
     try {
-      const local = JSON.parse(
-        localStorage.getItem('calls_kitchen_local_orders') || '[]'
-      )
-      setOrders(local)
-    } catch {
-      setOrders([])
-    }
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .order('created_at', { ascending: false });
 
-    setLoading(false)
-  }
+      if (error) throw error;
+
+      setOrders(data ?? []);
+    } catch (err) {
+      console.error('Gagal mengambil pesanan dari Supabase:', err);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   useEffect(() => {
     fetchOrders()
