@@ -128,16 +128,6 @@ export const Login: React.FC = () => {
           </Link>
         </div>
 
-        {!isLiveConfigured && (
-          <div className="pt-3 border-t border-cream-200 text-center">
-            <span className="text-[11px] text-brown-400 block mb-1">
-              Mode Demo Lokal Aktif (Supabase Key belum terisi):
-            </span>
-            <span className="text-[11px] text-brown-600">
-              Gunakan email apapun untuk masuk sebagai Customer, atau email dengan kata <strong>admin</strong> (contoh: <code>admin@callskitchen.com</code>) untuk akses Dashboard Admin.
-            </span>
-          </div>
-        )}
       </div>
     </div>
   )
