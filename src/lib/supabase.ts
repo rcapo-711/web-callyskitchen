@@ -10,7 +10,7 @@ export const isSupabaseConfigured = (): boolean => {
   return Boolean(
     supabaseUrl && 
     supabaseUrl.startsWith('http') &&
-    supabaseUrl !== 'https://your-project.supabase.co' && 
+    supabaseUrl !== 'https://icnbtgkzzocjgjosenca.supabase.co' && 
     supabaseAnonKey && 
     supabaseAnonKey.length > 20
   )
@@ -26,8 +26,8 @@ export const getSupabase = (): SupabaseClient => {
       )
     }
     clientInstance = createClient(
-      supabaseUrl || 'https://placeholder.supabase.co', 
-      supabaseAnonKey || 'placeholder-anon-key-calls-kitchen-2026', 
+      supabaseUrl || 'https://icnbtgkzzocjgjosenca.supabase.co', 
+      supabaseAnonKey || 'sb_publishable_eyMFNL1fGiVw6IqCBy6DeQ_WNzIJXDX', 
       {
         auth: {
           persistSession: true,

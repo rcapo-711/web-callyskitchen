@@ -50,7 +50,7 @@ async function runMigration() {
     console.warn('1. Buka Supabase Dashboard -> Project Settings -> Database')
     console.warn('2. Salin Connection String (URI / Session Mode)')
     console.warn('3. Tambahkan ke file .env:')
-    console.warn('   DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT_REF].supabase.co:5432/postgres\n')
+    console.warn('   DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.icnbtgkzzocjgjosenca.supabase.co:5432/postgres\n')
 
     // Generate consolidated SQL files for 1-click execution in Supabase SQL Editor
     const migrationSql = fs.readFileSync(migrationFilePath, 'utf-8')
