@@ -46,7 +46,7 @@ export const Checkout: React.FC = () => {
   const orderSuccessRef = useRef(false)
 
   // Standard shipping cost from store config
-  const shippingCost = 12000
+  const shippingCost = 1000
   const grandTotal = selectedSubtotal + shippingCost
 
   // Redirect if no selected items (only if not currently submitting or order completed)

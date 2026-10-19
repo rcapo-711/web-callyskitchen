@@ -386,7 +386,7 @@ VALUES
         "phone": "0812-3456-7890",
         "whatsapp": "6281234567890",
         "address": "Jl. Rasa Bahagia No. 12, Jakarta",
-        "default_shipping_cost": 12000,
+        "default_shipping_cost": 1000,
         "is_store_open": true
     }'::jsonb)
 ON CONFLICT (key) DO NOTHING;
